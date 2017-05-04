@@ -1,0 +1,96 @@
+* What it looks like in use
+
+I'm out and about with my crappy smart phone that i can't or don't want to 
+install apps on.  I have the Keep app from google which lets me share notes
+with my partner at home.  We can use it for a grocery list for example.
+
+I buy a coffee and a muffin in the morning, pizza at lunch, TP on the way
+home.  Each time I make a purchase, I type a simple note into my phone
+(idk the best/coolest way to do this).  When I get home, I have a 
+raspberry pi or some othe cool linux box serving a sinatra app as the
+frontend to this piece.  somehow i post the note on my phone to this
+app and all of my spending gets recorded and put into proper budget
+categories.
+
+** Yaml is easy, just like a normal human list
+
+In yaml maybe my coffee, pizza and TP look like this:
+
+#+BEGIN_SRC yaml :tangle test.yml
+  - food: 5.67
+  - food: 8.90
+  - household: 8.99
+#+END_SRC
+
+reading in this yaml would look like an array of key/value pairs:
+
+#+BEGIN_SRC ruby
+  [{food: 5.67}, {food: 8.90}, {household: 8.99}]
+#+END_SRC
+
+gonna test that by simply executing this ruby block heh heh.
+
+#+BEGIN_SRC ruby 
+require 'yaml'
+
+expenses = YAML.load_file('test.yml')
+#+END_SRC
+
+#+RESULTS:
+| food      | =>5.67 |
+| food      | =>8.9  |
+| household | =>8.99 |
+
+Interesting that org decided to output it as a table, but I double
+checked and in ruby you'd get the array from above.
+
+** Send Yaml to Server
+
+somehow you send off this simple text file (originally i thought twilio
+could just let me send texts, but i dont need this to be global. maybe
+someday we sell this service or something tho, texting yaml would be 
+easy to)
+
+with the Keep app, i can currently send to google docs, a github gist,
+a text, lots of options.  the github gist seemed most interesting to me
+but maybe there's some easy app to just send POST data, or you just
+browse to the Sintatra front end on your phone and upload it.  There's
+probably a brilliant way to do it, but i want it to be as simple and
+low tech as possible.  google hangouts uses xmpp so maybe even just
+having some kind of jabber service listening you could just send it 
+that way.
+
+when the expenses arrive, simply do basic arithmetic and update
+the account information.
+
+perhaps there could be an Elm front end for visualizing data and
+user input?  
+
+* Modeling the Budget
+
+** Income
+
+Its hard to have a budget without any income.  
+
+At its simplest, an income is just a positive number.  However, there's 
+probably other information we can set up so we can do things with this
+number.  Like have it recur on a certain date, or be tagged with the 
+source of income.  As we have more ideas about what we may want to do
+with the income, we can add to this class and make new kinds of behaviors
+possible with the same data.
+
+#+name: income
+#+BEGIN_SRC ruby :tangle income.rb
+  class Income
+
+    def initialize amount
+      @amount = amount
+    end
+    
+  end
+#+END_SRC
+
+* Main
+
+I dunno what this looks like in ruby but at some point i imagine this main
+loop will be reading and writing yaml files
