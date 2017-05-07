@@ -1,8 +1,10 @@
 
+# 300
 Food:
   - 38
   - 7.33
 
+# $60 
 Gas:
   - 33
 
@@ -16,4 +18,4 @@ Grant:
 Lisa:
 
 Francey:
-  - 27
+  - [27, playmat]
