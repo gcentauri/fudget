@@ -17,9 +17,24 @@ categories.
 In yaml maybe my coffee, pizza and TP look like this:
 
 #+BEGIN_SRC yaml :tangle test.yml
-  - food: 5.67
-  - food: 8.90
-  - household: 8.99
+  Food:
+    - 38
+    - 7.33
+
+  Gas:
+    - 33
+
+  Fun:
+    - 7
+    - 17.58
+
+  Grant:
+    - 150
+
+  Lisa:
+
+  Francey:
+    - 27
 #+END_SRC
 
 reading in this yaml would look like an array of key/value pairs:
@@ -31,15 +46,14 @@ reading in this yaml would look like an array of key/value pairs:
 gonna test that by simply executing this ruby block heh heh.
 
 #+BEGIN_SRC ruby 
+
 require 'yaml'
 
 expenses = YAML.load_file('test.yml')
 #+END_SRC
 
 #+RESULTS:
-| food      | =>5.67 |
-| food      | =>8.9  |
-| household | =>8.99 |
+| Food | => | (38 7.33) | Gas | => | (33) | Fun | => | (7 17.58) | Grant | => | (150) | Lisa | =>nil | Francey | => | (27) |
 
 Interesting that org decided to output it as a table, but I double
 checked and in ruby you'd get the array from above.
@@ -50,6 +64,8 @@ somehow you send off this simple text file (originally i thought twilio
 could just let me send texts, but i dont need this to be global. maybe
 someday we sell this service or something tho, texting yaml would be 
 easy to)
+
+*** First Thoughts Thu May  4 17:16:24 CDT 2017
 
 with the Keep app, i can currently send to google docs, a github gist,
 a text, lots of options.  the github gist seemed most interesting to me
@@ -65,6 +81,146 @@ the account information.
 
 perhaps there could be an Elm front end for visualizing data and
 user input?  
+
+*** Second Thoughts Sat May  6 17:17:07 CDT 2017
+
+I'd like to be able to just use flat yaml files as the 'database' for now.
+It would be cool to have a front end where you could start a new budget,
+entering in paycheck details, monthly recurring expenses, and set up 
+envelopes for tracking spending.  These will create yaml files and start 
+the budget.  
+
+After tracking purchases on your phone, with some plain text, ideally you'd
+just share or copy/paste into the front end, or send a curl request somehow.
+
+That chunk of Yaml will be processed immediately deducting all amounts from
+the proper envelopes.  It could also be written to disk and saved as a 
+ledger with a timestamp.  Later, reporting tools could read collections of
+those expense tickets and put something together?  
+
+
+* Prototype Data
+Income, recurring paycheck every 14 days
+
+#+BEGIN_SRC yaml :tangle paycheck.yml
+  gross: 2083.44
+  tax: -385.42
+  healthcare: -145.00
+  dental: -40.50
+#+END_SRC
+
+Expenses, recurring monthly
+
+#+BEGIN_SRC yaml :tangle monthly.yml
+  rent: -1400.00
+  versa: -117.00
+  phones: -100.00
+  grant_loan: -78.60
+  lisa_loan: -400.00
+  car_insurance: -107.50
+#+END_SRC
+
+Example of expenses from envelopes recorded on Keep
+
+#+BEGIN_SRC yaml :tangle env_expenses.yml
+  # 300
+  Food:
+    - 38
+    - 7.33
+
+  # $60 
+  Gas:
+    - 33
+
+  Fun:
+    - 7
+    - 17.58
+
+  Grant:
+    - 150
+
+  Lisa:
+
+  Francey:
+    - [27, playmat]
+#+END_SRC
+
+amount, purchase, envelope
+27, playmat, francey
+150, allowance, grant
+
+** Prototype budget loader
+
+first lets try to get the net from my paycheck and the total expenses from monthly
+
+#+name: net-paycheck
+#+BEGIN_SRC ruby 
+  require 'yaml'
+
+  paycheck = YAML.load_file('paycheck.yml') 
+
+  return paycheck.values.reduce(:+)
+#+END_SRC
+
+#+RESULTS: net-paycheck
+: 1512.52
+
+Ok, that works, lets set up a whole budget.
+
+#+name: Proto-Fudget
+#+BEGIN_SRC ruby :tangle proto-fudget.rb
+  require 'yaml'
+
+  class Fudget
+
+    def initialize (check, monthly, env)
+      @paycheck = check
+      @recurring = monthly
+      @envelopes = env
+    end
+    
+    def net_monthly_income
+      return total_income(2) + monthly_expenses
+    end
+
+    def monthly_expenses
+      return @recurring.values.reduce(:+)
+    end
+
+    def total_income(no_of_checks)
+      net_check = @paycheck.values.reduce(:+)
+      total = 0.00
+
+      while no_of_checks > 0
+        total += net_check
+        no_of_checks -= 1
+      end
+
+      return total
+    end
+
+  end
+#+END_SRC
+
+#+name: budget
+#+BEGIN_SRC ruby
+  require '/Users/grant/Desktop/projects/fudget/fudget.rb'
+
+  my_paycheck = YAML.load_file('paycheck.yml')
+  my_expenses = YAML.load_file('monthly.yml')
+  my_envelopes = YAML.load_file('env_expenses.yml')
+
+  budget = Fudget.new(my_paycheck, my_expenses, my_envelopes)
+
+  month = [budget.total_income(2), budget.monthly_expenses, budget.net_monthly_income ] 
+
+  return month
+
+#+END_SRC
+
+#+RESULTS: budget
+| 3025.04 | -1803.1 | 1221.94 |
+
 
 * Modeling the Budget
 
