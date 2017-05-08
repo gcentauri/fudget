@@ -101,23 +101,26 @@ those expense tickets and put something together?
 
 * Prototype Data
 Income, recurring paycheck every 14 days
-
-#+BEGIN_SRC yaml :tangle paycheck.yml
-  gross: 2083.44
-  tax: -385.42
-  healthcare: -145.00
-  dental: -40.50
+#+name: net-paycheck
+#+BEGIN_SRC ruby 
+check = { gross: 2083.44, tax: -385.42 }
+return check.values.reduce(:+)
 #+END_SRC
+
+#+RESULTS: net-paycheck
+: 1698.02
 
 Expenses, recurring monthly
 
 #+BEGIN_SRC yaml :tangle monthly.yml
-  rent: -1400.00
-  versa: -117.00
-  phones: -100.00
-  grant_loan: -78.60
-  lisa_loan: -400.00
-  car_insurance: -107.50
+  healthcare: 290.00
+  dental: 81.00
+  house: 1400.00
+  versa: 117.00
+  phones: 100.00
+  grant_loan: 78.60
+  lisa_loan: 400.00
+  car_insurance: 107.50
 #+END_SRC
 
 Example of expenses from envelopes recorded on Keep
@@ -142,85 +145,115 @@ Example of expenses from envelopes recorded on Keep
   Lisa:
 
   Francey:
-    - [27, playmat]
+    - 27
 #+END_SRC
 
+
+*** example csv plain text
 amount, purchase, envelope
 27, playmat, francey
 150, allowance, grant
 
-** Prototype budget loader
+** Prototype Fudget
 
-first lets try to get the net from my paycheck and the total expenses from monthly
-
-#+name: net-paycheck
-#+BEGIN_SRC ruby 
-  require 'yaml'
-
-  paycheck = YAML.load_file('paycheck.yml') 
-
-  return paycheck.values.reduce(:+)
-#+END_SRC
-
-#+RESULTS: net-paycheck
-: 1512.52
-
-Ok, that works, lets set up a whole budget.
-
+Currently trying to set up a class that can make a new budget object you
+can add income, expenses, and envelopes to.  Ideally, all data structures
+will have counterparts to yaml, and we can read and write to yaml too.
 #+name: Proto-Fudget
 #+BEGIN_SRC ruby :tangle proto-fudget.rb
   require 'yaml'
 
   class Fudget
+    # right now, we'll just work on a monthly basis, but perhaps a future feature
+    # can be setting things for different time scales
 
-    def initialize (check, monthly, env)
-      @paycheck = check
-      @recurring = monthly
-      @envelopes = env
+    def initialize
+      @income = [] 
+      @expenses = []
+      @envelopes = {}
     end
     
-    def net_monthly_income
-      return total_income(2) + monthly_expenses
+    def add_income(source, amount, perMonth)
+      income = { name: source, amount: amount }
+      perMonth.times { @income << income }
     end
 
-    def monthly_expenses
-      return @recurring.values.reduce(:+)
+    def add_expense(amount)
+      @expenses << amount
     end
 
-    def total_income(no_of_checks)
-      net_check = @paycheck.values.reduce(:+)
-      total = 0.00
+    def add_envelope(name)
+      @envelopes[name] = []
+    end
 
-      while no_of_checks > 0
-        total += net_check
-        no_of_checks -= 1
+    def deduct_from_envelope(env, amt)
+      @envelopes[env] << amt
+    end
+
+    def total_income
+      credits = []
+      @income.each { |credit| credits << credit[:amount] }
+      return credits.reduce(:+)
+    end
+
+    def total_expenses
+      @expenses.reduce(:+)
+    end
+
+    def net_income
+      return total_income - total_expenses
+    end
+
+    def load_expenses(file)
+      expenses = YAML.load_file(file)
+
+      expenses.keys.each do |key|
+        debits = expenses[key] ||= [0]
+        debits.each { |debit| self.deduct_from_envelope(key, debit) }
       end
+    end
 
-      return total
+    def save(path)
+      budget = { income: @income, 
+                 expenses: @expenses, 
+                 envelopes: @envelopes
+               }
+
+      file = File.open(path , 'w') 
+      file.write(YAML.dump(budget))
+      file.close
     end
 
   end
 #+END_SRC
 
-#+name: budget
-#+BEGIN_SRC ruby
-  require '/Users/grant/Desktop/projects/fudget/fudget.rb'
+#+name: proto-budget
+#+BEGIN_SRC ruby 
+  require './proto-fudget.rb'
 
-  my_paycheck = YAML.load_file('paycheck.yml')
-  my_expenses = YAML.load_file('monthly.yml')
-  my_envelopes = YAML.load_file('env_expenses.yml')
+  budget = Fudget.new
 
-  budget = Fudget.new(my_paycheck, my_expenses, my_envelopes)
+  budget.add_income("paycheck", 1698.02, 2)
+  budget.add_income("roomy rent", 200, 2)
 
-  month = [budget.total_income(2), budget.monthly_expenses, budget.net_monthly_income ] 
+  expenses = YAML.load_file('monthly.yml')
+  expenses.values.map { |amount| budget.add_expense(amount) }
 
-  return month
+  envelopes = ['Food', 'Grant', 'Lisa', 'Francey', 'Gas', 'Fun', 'Gifts']
+  envelopes.each { |env| budget.add_envelope(env) }
 
+  budget.load_expenses('env_expenses.yml')
+
+  budget.save('budget.yml')
+
+  table = [["Total Income", "Total Expenses", "Net Income"]]
+
+  return table << [ budget.total_income, budget.total_expenses, budget.net_income ]
 #+END_SRC
 
-#+RESULTS: budget
-| 3025.04 | -1803.1 | 1221.94 |
-
+#+RESULTS: proto-budget
+| Total Income | Total Expenses | Net Income |
+|      3796.04 |         2574.1 |    1221.94 |
 
 * Modeling the Budget
 

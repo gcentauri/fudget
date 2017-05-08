@@ -2,31 +2,64 @@
 require 'yaml'
 
 class Fudget
+  # right now, we'll just work on a monthly basis, but perhaps a future feature
+  # can be setting things for different time scales
 
-  def initialize (check, monthly, env)
-    @paycheck = check
-    @recurring = monthly
-    @envelopes = env
+  def initialize
+    @income = [] 
+    @expenses = []
+    @envelopes = {}
   end
   
-  def net_monthly_income
-    return total_income(2) + monthly_expenses
+  def add_income(source, amount, perMonth)
+    income = { name: source, amount: amount }
+    perMonth.times { @income << income }
   end
 
-  def monthly_expenses
-    return @recurring.values.reduce(:+)
+  def add_expense(amount)
+    @expenses << amount
   end
 
-  def total_income(no_of_checks)
-    net_check = @paycheck.values.reduce(:+)
-    total = 0.00
+  def add_envelope(name)
+    @envelopes[name] = []
+  end
 
-    while no_of_checks > 0
-      total += net_check
-      no_of_checks -= 1
+  def deduct_from_envelope(env, amt)
+    @envelopes[env] << amt
+  end
+
+  def total_income
+    credits = []
+    @income.each { |credit| credits << credit[:amount] }
+    return credits.reduce(:+)
+  end
+
+  def total_expenses
+    @expenses.reduce(:+)
+  end
+
+  def net_income
+    return total_income - total_expenses
+  end
+
+  def load_expenses(file)
+    expenses = YAML.load_file(file)
+
+    expenses.keys.each do |key|
+      debits = expenses[key] ||= [0]
+      debits.each { |debit| self.deduct_from_envelope(key, debit) }
     end
+  end
 
-    return total
+  def save(path)
+    budget = { income: @income, 
+               expenses: @expenses, 
+               envelopes: @envelopes
+             }
+
+    file = File.open(path , 'w') 
+    file.write(YAML.dump(budget))
+    file.close
   end
 
 end
