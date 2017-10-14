@@ -1,118 +1,145 @@
 * What it looks like in use
 
-I'm out and about with my crappy smart phone that i can't or don't want to 
-install apps on.  I have the Keep app from google which lets me share notes
-with my partner at home.  We can use it for a grocery list for example.
+  I'm out and about with my crappy smart phone that i can't or don't want to 
+  install apps on.  I have the Keep app from google which lets me share notes
+  with my partner at home.  We can use it for a grocery list for example.
 
-I buy a coffee and a muffin in the morning, pizza at lunch, TP on the way
-home.  Each time I make a purchase, I type a simple note into my phone
-(idk the best/coolest way to do this).  When I get home, I have a 
-raspberry pi or some othe cool linux box serving a sinatra app as the
-frontend to this piece.  somehow i post the note on my phone to this
-app and all of my spending gets recorded and put into proper budget
-categories.
+  I buy a coffee and a muffin in the morning, pizza at lunch, TP on the way
+  home.  Each time I make a purchase, I type a simple note into my phone
+  (idk the best/coolest way to do this).  When I get home, I have a 
+  raspberry pi or some othe cool linux box serving a sinatra app as the
+  frontend to this piece.  somehow i post the note on my phone to this
+  app and all of my spending gets recorded and put into proper budget
+  categories.
 
 ** Yaml is easy, just like a normal human list
 
-In yaml maybe my coffee, pizza and TP look like this:
+   In yaml maybe my coffee, pizza and TP look like this:
 
-#+BEGIN_SRC yaml :tangle test.yml
-  Food:
-    - 38
-    - 7.33
+   #+BEGIN_SRC yaml :tangle test.yml
+     Food:
+       - 38
+       - 7.33
 
-  Gas:
-    - 33
+     Gas:
+       - 33
 
-  Fun:
-    - 7
-    - 17.58
+     Fun:
+       - 7
+       - 17.58
 
-  Grant:
-    - 150
+     Grant:
+       - 150
 
-  Lisa:
+     Lisa:
 
-  Francey:
-    - 27
-#+END_SRC
+     Francey:
+       - 27
+   #+END_SRC
 
-reading in this yaml would look like an array of key/value pairs:
+   reading in this yaml would look like an array of key/value pairs:
 
-#+BEGIN_SRC ruby
-  [{food: 5.67}, {food: 8.90}, {household: 8.99}]
-#+END_SRC
+   #+BEGIN_SRC ruby
+     [{food: 5.67}, {food: 8.90}, {household: 8.99}]
+   #+END_SRC
 
-gonna test that by simply executing this ruby block heh heh.
+   #+RESULTS:
+   | :food=>5.67      |
+   | :food=>8.9       |
+   | :household=>8.99 |
 
-#+BEGIN_SRC ruby 
+   gonna test that by simply executing this ruby block heh heh.
 
-require 'yaml'
+   #+BEGIN_SRC ruby 
 
-expenses = YAML.load_file('test.yml')
-#+END_SRC
+     require 'yaml'
 
-#+RESULTS:
-| Food | => | (38 7.33) | Gas | => | (33) | Fun | => | (7 17.58) | Grant | => | (150) | Lisa | =>nil | Francey | => | (27) |
+     expenses = YAML.load_file('test.yml')
+   #+END_SRC
 
-Interesting that org decided to output it as a table, but I double
-checked and in ruby you'd get the array from above.
+   #+RESULTS:
+   | Food | => | (38 7.33) | Gas | => | (33) | Fun | => | (7 17.58) | Grant | => | (150) | Lisa | =>nil | Francey | => | (27) |
+
+   Interesting that org decided to output it as a table, but I double
+   checked and in ruby you'd get the array from above.
 
 ** Send Yaml to Server
 
-somehow you send off this simple text file (originally i thought twilio
-could just let me send texts, but i dont need this to be global. maybe
-someday we sell this service or something tho, texting yaml would be 
-easy to)
+   somehow you send off this simple text file (originally i thought twilio
+   could just let me send texts, but i dont need this to be global. maybe
+   someday we sell this service or something tho, texting yaml would be 
+   easy too
 
 *** First Thoughts Thu May  4 17:16:24 CDT 2017
 
-with the Keep app, i can currently send to google docs, a github gist,
-a text, lots of options.  the github gist seemed most interesting to me
-but maybe there's some easy app to just send POST data, or you just
-browse to the Sintatra front end on your phone and upload it.  There's
-probably a brilliant way to do it, but i want it to be as simple and
-low tech as possible.  google hangouts uses xmpp so maybe even just
-having some kind of jabber service listening you could just send it 
-that way.
+    with the Keep app, i can currently send to google docs, a github gist,
+    a text, lots of options.  the github gist seemed most interesting to me
+    but maybe there's some easy app to just send POST data, or you just
+    browse to the Sintatra front end on your phone and upload it.  There's
+    probably a brilliant way to do it, but i want it to be as simple and
+    low tech as possible.  google hangouts uses xmpp so maybe even just
+    having some kind of jabber service listening you could just send it 
+    that way.
 
-when the expenses arrive, simply do basic arithmetic and update
-the account information.
+    when the expenses arrive, simply do basic arithmetic and update
+    the account information.
 
-perhaps there could be an Elm front end for visualizing data and
-user input?  
+    perhaps there could be an Elm front end for visualizing data and
+    user input?  
+
+**** Anderson Thoughts, Sat Oct 14 10:40:34 CDT 2017
+
+     - [ ] POST data from android
+       
+       Now that we have a little familiarity with Android studio and java, maybe
+       we try to build a simple android frontend? I like the texting idea most.
+       It seems the simplest way.
+       
+       Something I think could be added to the input model is a date. Default w/
+       no date would assume today's date. For budgeting, I would like to give a
+       future date and have that expense calculated in a projection for the future.
+
+       Taking after Digit, I think the simplest thing to be able to do is to open
+       your phone, text something like:
+
+       : "Food 38"
+       : "Groceries 200 Nov 19"
+
+       Hangouts or whatever would send to jabber service, jabber service would 
+       translate into yaml to post to our application. I believe this is what
+       you were thinking, Grant?
 
 *** Second Thoughts Sat May  6 17:17:07 CDT 2017
 
-I'd like to be able to just use flat yaml files as the 'database' for now.
-It would be cool to have a front end where you could start a new budget,
-entering in paycheck details, monthly recurring expenses, and set up 
-envelopes for tracking spending.  These will create yaml files and start 
-the budget.  
+    I'd like to be able to just use flat yaml files as the 'database' for now.
+    It would be cool to have a front end where you could start a new budget,
+    entering in paycheck details, monthly recurring expenses, and set up 
+    envelopes for tracking spending.  These will create yaml files and start 
+    the budget.  
 
-After tracking purchases on your phone, with some plain text, ideally you'd
-just share or copy/paste into the front end, or send a curl request somehow.
+    After tracking purchases on your phone, with some plain text, ideally you'd
+    just share or copy/paste into the front end, or send a curl request somehow.
 
-That chunk of Yaml will be processed immediately deducting all amounts from
-the proper envelopes.  It could also be written to disk and saved as a 
-ledger with a timestamp.  Later, reporting tools could read collections of
-those expense tickets and put something together?  
+    That chunk of Yaml will be processed immediately deducting all amounts from
+    the proper envelopes.  It could also be written to disk and saved as a 
+    ledger with a timestamp.  Later, reporting tools could read collections of
+    those expense tickets and put something together?  
 
 
 * Prototype Data
-Income, recurring paycheck every 14 days
-#+name: net-paycheck
-#+BEGIN_SRC ruby 
+  Income, recurring paycheck every 14 days
+  #+name: net-paycheck
+  #+BEGIN_SRC ruby 
 check = { gross: 2083.44, tax: -385.42 }
 return check.values.reduce(:+)
-#+END_SRC
+  #+END_SRC
 
-#+RESULTS: net-paycheck
-: 1698.02
+  #+RESULTS: net-paycheck
+  : 1698.02
 
-Expenses, recurring monthly
+  Expenses, recurring monthly
 
-#+BEGIN_SRC yaml :tangle monthly.yml
+  #+BEGIN_SRC yaml :tangle monthly.yml
   healthcare: 290.00
   dental: 81.00
   house: 1400.00
@@ -121,11 +148,11 @@ Expenses, recurring monthly
   grant_loan: 78.60
   lisa_loan: 400.00
   car_insurance: 107.50
-#+END_SRC
+  #+END_SRC
 
-Example of expenses from envelopes recorded on Keep
+  Example of expenses from envelopes recorded on Keep
 
-#+BEGIN_SRC yaml :tangle env_expenses.yml
+  #+BEGIN_SRC yaml :tangle env_expenses.yml
   # 300
   Food:
     - 38
@@ -146,21 +173,21 @@ Example of expenses from envelopes recorded on Keep
 
   Francey:
     - 27
-#+END_SRC
+  #+END_SRC
 
 
 *** example csv plain text
-amount, purchase, envelope
-27, playmat, francey
-150, allowance, grant
+    amount, purchase, envelope
+    27, playmat, francey
+    150, allowance, grant
 
 ** Prototype Fudget
 
-Currently trying to set up a class that can make a new budget object you
-can add income, expenses, and envelopes to.  Ideally, all data structures
-will have counterparts to yaml, and we can read and write to yaml too.
-#+name: Proto-Fudget
-#+BEGIN_SRC ruby :tangle proto-fudget.rb
+   Currently trying to set up a class that can make a new budget object you
+   can add income, expenses, and envelopes to.  Ideally, all data structures
+   will have counterparts to yaml, and we can read and write to yaml too.
+   #+name: Proto-Fudget
+   #+BEGIN_SRC ruby :tangle proto-fudget.rb
   require 'yaml'
 
   class Fudget
@@ -225,10 +252,10 @@ will have counterparts to yaml, and we can read and write to yaml too.
     end
 
   end
-#+END_SRC
+   #+END_SRC
 
-#+name: proto-budget
-#+BEGIN_SRC ruby 
+   #+name: proto-budget
+   #+BEGIN_SRC ruby 
   require './proto-fudget.rb'
 
   budget = Fudget.new
@@ -249,27 +276,27 @@ will have counterparts to yaml, and we can read and write to yaml too.
   table = [["Total Income", "Total Expenses", "Net Income"]]
 
   return table << [ budget.total_income, budget.total_expenses, budget.net_income ]
-#+END_SRC
+   #+END_SRC
 
-#+RESULTS: proto-budget
-| Total Income | Total Expenses | Net Income |
-|      3796.04 |         2574.1 |    1221.94 |
+   #+RESULTS: proto-budget
+   | Total Income | Total Expenses | Net Income |
+   |      3796.04 |         2574.1 |    1221.94 |
 
 * Modeling the Budget
 
 ** Income
 
-Its hard to have a budget without any income.  
+   Its hard to have a budget without any income.  
 
-At its simplest, an income is just a positive number.  However, there's 
-probably other information we can set up so we can do things with this
-number.  Like have it recur on a certain date, or be tagged with the 
-source of income.  As we have more ideas about what we may want to do
-with the income, we can add to this class and make new kinds of behaviors
-possible with the same data.
+   At its simplest, an income is just a positive number.  However, there's 
+   probably other information we can set up so we can do things with this
+   number.  Like have it recur on a certain date, or be tagged with the 
+   source of income.  As we have more ideas about what we may want to do
+   with the income, we can add to this class and make new kinds of behaviors
+   possible with the same data.
 
-#+name: income
-#+BEGIN_SRC ruby :tangle income.rb
+   #+name: income
+   #+BEGIN_SRC ruby :tangle income.rb
   class Income
 
     def initialize amount
@@ -277,9 +304,9 @@ possible with the same data.
     end
     
   end
-#+END_SRC
+   #+END_SRC
 
 * Main
 
-I dunno what this looks like in ruby but at some point i imagine this main
-loop will be reading and writing yaml files
+  I dunno what this looks like in ruby but at some point i imagine this main
+  loop will be reading and writing yaml files
